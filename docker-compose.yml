@@ -5,18 +5,17 @@ services:
     container_name: vault-server
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${HOST_PORT:-8080}:8080"
     environment:
-      - PORT=${PORT:-8080}
-      - DATA_DIR=${DATA_DIR:-/app/data}
+      - PORT=8080
+      - DATA_DIR=/app/data
       - JWT_SECRET=${JWT_SECRET}
       - SIGNED_URL_SECRET=${SIGNED_URL_SECRET}
       - TOKEN_PEPPER=${TOKEN_PEPPER}
       - ACCESS_TOKEN_TTL=${ACCESS_TOKEN_TTL:-15m}
       - REFRESH_TOKEN_TTL=${REFRESH_TOKEN_TTL:-720h}
       - SIGNED_URL_TTL=${SIGNED_URL_TTL:-5m}
-      - COOKIE_SECURE=${COOKIE_SECURE:-true}
-      - COOKIE_SAMESITE=${COOKIE_SAMESITE:-Lax}
+      - LOG_LEVEL=${LOG_LEVEL:-warn}
     volumes:
       - ./data:/app/data
     healthcheck:

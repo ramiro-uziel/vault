@@ -65,7 +65,7 @@ func loadConfig() Config {
 	}
 
 	cookieDomain := os.Getenv("COOKIE_DOMAIN")
-	cookieSecure := getBoolEnv("COOKIE_SECURE", true)
+	cookieSecure := getBoolEnv("COOKIE_SECURE", false)
 	cookieSameSite := os.Getenv("COOKIE_SAMESITE")
 	if cookieSameSite == "" {
 		cookieSameSite = "Lax"
@@ -170,8 +170,19 @@ func serveFrontend() http.Handler {
 }
 
 func main() {
+	logLevel := slog.LevelInfo
+	if l := os.Getenv("LOG_LEVEL"); l != "" {
+		switch l {
+		case "debug":
+			logLevel = slog.LevelDebug
+		case "warn":
+			logLevel = slog.LevelWarn
+		case "error":
+			logLevel = slog.LevelError
+		}
+	}
 	slog.SetDefault(slog.New(logger.NewPrettyHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level: logLevel,
 	})))
 	slog.Info("Starting Vault server")
 
