@@ -262,7 +262,7 @@ func (h *InstanceHandler) ImportInstance(w http.ResponseWriter, r *http.Request)
 
 	h.sendImportProgress(userID, "uploading", 0, 0, "")
 
-	tmpZip, err := os.CreateTemp("", "vault-import-*.zip")
+	tmpZip, err := os.CreateTemp(h.dataDir, "vault-import-*.zip")
 	if err != nil {
 		return apperr.NewInternal("failed to create temp file", err)
 	}
@@ -284,7 +284,7 @@ func (h *InstanceHandler) ImportInstance(w http.ResponseWriter, r *http.Request)
 	totalFiles := len(zr.File)
 	hasManifest := false
 	hasDB := false
-	tmpExtractDir, err := os.MkdirTemp("", "vault-extract-*")
+	tmpExtractDir, err := os.MkdirTemp(h.dataDir, "vault-extract-*")
 	if err != nil {
 		return apperr.NewInternal("failed to create temp directory", err)
 	}
