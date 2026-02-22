@@ -232,7 +232,7 @@ func main() {
 	adminHandler := handlers.NewAdminHandler(database, config.AuthConfig)
 	prefsHandler := handlers.NewPreferencesHandler(database)
 	statsHandler := handlers.NewStatsHandler(database, CommitSHA)
-	instanceHandler := handlers.NewInstanceHandler(database, config.DataDir)
+	instanceHandler := handlers.NewInstanceHandler(database, config.DataDir, wsHub)
 	mediaHandler := handlers.NewMediaHandler(config.AuthConfig)
 	projectsHandler := projects.NewProjectsHandler(svc.Projects, database, config.DataDir)
 	foldersHandler := handlers.NewFoldersHandler(database)
@@ -312,6 +312,7 @@ func main() {
 	mux.Handle("DELETE /api/admin/users/{id}", authMW(httputil.Wrap(adminHandler.DeleteUser)))
 	mux.Handle("POST /api/admin/users/{id}/reset-link", authMW(httputil.Wrap(adminHandler.CreateResetLink)))
 
+	mux.Handle("GET /api/admin/instance/export/size", authMW(httputil.Wrap(instanceHandler.GetExportSize)))
 	mux.Handle("GET /api/admin/instance/export", authMW(httputil.Wrap(instanceHandler.ExportInstance)))
 	mux.Handle("POST /api/admin/instance/import", authMW(httputil.Wrap(instanceHandler.ImportInstance)))
 	mux.Handle("POST /api/admin/instance/reset", authMW(httputil.Wrap(instanceHandler.ResetInstance)))

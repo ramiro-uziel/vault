@@ -23,12 +23,14 @@ import (
 type InstanceHandler struct {
 	db      *db.DB
 	dataDir string
+	wsHub   *WSHub
 }
 
-func NewInstanceHandler(database *db.DB, dataDir string) *InstanceHandler {
+func NewInstanceHandler(database *db.DB, dataDir string, wsHub *WSHub) *InstanceHandler {
 	return &InstanceHandler{
 		db:      database,
 		dataDir: dataDir,
+		wsHub:   wsHub,
 	}
 }
 
@@ -37,6 +39,41 @@ type ExportManifest struct {
 	AppVersion   string    `json:"app_version"`
 	InstanceName string    `json:"instance_name"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+// GetExportSize returns the estimated export size in bytes
+func (h *InstanceHandler) GetExportSize(w http.ResponseWriter, r *http.Request) error {
+	userID, err := httputil.RequireUserID(r)
+	if err != nil {
+		return apperr.NewUnauthorized("unauthorized")
+	}
+
+	user, err := h.db.Queries.GetUserByID(r.Context(), int64(userID))
+	if err != nil || !user.IsAdmin {
+		return apperr.NewForbidden("admin access required")
+	}
+
+	var totalBytes int64
+
+	// Database files
+	dbPath := h.db.GetPath()
+	if info, err := os.Stat(dbPath); err == nil {
+		totalBytes += info.Size()
+	}
+	if info, err := os.Stat(dbPath + "-wal"); err == nil {
+		totalBytes += info.Size()
+	}
+
+	// Projects directory
+	projectsDir := filepath.Join(h.dataDir, "projects")
+	filepath.Walk(projectsDir, func(_ string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			totalBytes += info.Size()
+		}
+		return nil
+	})
+
+	return httputil.OKResult(w, map[string]int64{"size_bytes": totalBytes})
 }
 
 // ExportInstance streams a complete backup as ZIP
@@ -84,11 +121,33 @@ func (h *InstanceHandler) ExportInstance(w http.ResponseWriter, r *http.Request)
 	}
 	manifestJSON, _ := json.Marshal(manifest)
 
+	// Count total files for progress reporting
+	totalFiles := 2 // manifest.json + vault.db
+	if _, err := os.Stat(dbPath + "-wal"); err == nil {
+		totalFiles++ // vault.db-wal
+	}
+	projectsDir := filepath.Join(h.dataDir, "projects")
+	if _, err := os.Stat(projectsDir); err == nil {
+		filepath.Walk(projectsDir, func(_ string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				totalFiles++
+			}
+			return nil
+		})
+	}
+
+	currentFile := 0
+	sendProgress := func(filename string) {
+		currentFile++
+		h.sendExportProgress(userID, currentFile, totalFiles, filename)
+	}
+
 	manifestFile, err := zw.Create("manifest.json")
 	if err != nil {
 		return apperr.NewInternal("failed to create manifest in ZIP", err)
 	}
 	manifestFile.Write(manifestJSON)
+	sendProgress("manifest.json")
 
 	dbFile, err := os.Open(dbPath)
 	if err == nil {
@@ -97,6 +156,8 @@ func (h *InstanceHandler) ExportInstance(w http.ResponseWriter, r *http.Request)
 			io.Copy(zipFile, dbFile)
 		}
 	}
+	sendProgress("vault.db")
+
 	// Include WAL for complete backup
 	walPath := dbPath + "-wal"
 	if walFile, err := os.Open(walPath); err == nil {
@@ -104,17 +165,17 @@ func (h *InstanceHandler) ExportInstance(w http.ResponseWriter, r *http.Request)
 		if zipFile, err := zw.Create("vault.db-wal"); err == nil {
 			io.Copy(zipFile, walFile)
 		}
+		sendProgress("vault.db-wal")
 	}
 
-	projectsDir := filepath.Join(h.dataDir, "projects")
 	if _, err := os.Stat(projectsDir); err == nil {
-		h.addDirToZip(zw, projectsDir, "projects")
+		h.addDirToZip(zw, projectsDir, "projects", sendProgress)
 	}
 
 	return nil
 }
 
-func (h *InstanceHandler) addDirToZip(zw *zip.Writer, dir string, prefix string) error {
+func (h *InstanceHandler) addDirToZip(zw *zip.Writer, dir string, prefix string, onFile func(string)) error {
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
@@ -139,7 +200,24 @@ func (h *InstanceHandler) addDirToZip(zw *zip.Writer, dir string, prefix string)
 		}
 
 		io.Copy(zipFile, file)
+		if onFile != nil {
+			onFile(zipPath)
+		}
 		return nil
+	})
+}
+
+func (h *InstanceHandler) sendExportProgress(userID int, current, total int, filename string) {
+	if h.wsHub == nil {
+		return
+	}
+	h.wsHub.SendToUser(int64(userID), WSMessage{
+		Type: "export_progress",
+		Payload: map[string]interface{}{
+			"current":  current,
+			"total":    total,
+			"filename": filename,
+		},
 	})
 }
 

@@ -10,10 +10,21 @@ interface WSMessage {
   payload: unknown
 }
 
+type WSMessageListener = (message: WSMessage) => void
+
 let globalWs: WebSocket | null = null
 let globalReconnectTimeout: ReturnType<typeof setTimeout> | null = null
 let globalConnectTimeout: ReturnType<typeof setTimeout> | null = null
 let isIntentionalDisconnect = false
+const messageListeners = new Set<WSMessageListener>()
+
+export function onWSMessage(listener: WSMessageListener) {
+  messageListeners.add(listener)
+}
+
+export function offWSMessage(listener: WSMessageListener) {
+  messageListeners.delete(listener)
+}
 
 /** @param enabled - Whether the WebSocket should connect (default: true) */
 export function useWebSocket(enabled: boolean = true) {
@@ -46,6 +57,8 @@ export function useWebSocket(enabled: boolean = true) {
           if (message.type === 'transcoding_update') {
             queryClient.invalidateQueries({ queryKey: trackKeys.all })
           }
+
+          messageListeners.forEach((listener) => listener(message))
         } catch (error) {
           console.error('[WebSocket] Failed to parse message:', error)
         }

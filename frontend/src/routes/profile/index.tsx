@@ -574,15 +574,6 @@ function ProfilePage() {
           <ExportInstanceModal
             isOpen={isExportModalOpen}
             onClose={() => setIsExportModalOpen(false)}
-            estimatedSizeGB={
-              globalStorageStats
-                ? Math.round(
-                    (globalStorageStats.total_size_bytes /
-                      (1024 * 1024 * 1024)) *
-                      10,
-                  ) / 10
-                : undefined
-            }
           />
 
           <ImportInstanceModal

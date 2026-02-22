@@ -1,6 +1,16 @@
-import { post, getCSRFToken } from './client'
+import { get, post, getCSRFToken } from './client'
 
-export async function exportInstance(): Promise<void> {
+export async function getExportSize(): Promise<number> {
+  const res = await get<{ size_bytes: number }>('/api/admin/instance/export/size')
+  return res.size_bytes
+}
+
+export interface ExportResult {
+  filename: string
+  sizeBytes: number
+}
+
+export async function exportInstance(): Promise<ExportResult> {
 	try {
 		const response = await fetch('/api/admin/instance/export', {
 			method: 'GET',
@@ -29,6 +39,8 @@ export async function exportInstance(): Promise<void> {
     link.click()
     link.remove()
     window.URL.revokeObjectURL(url)
+
+    return { filename, sizeBytes: blob.size }
   } catch (error) {
     console.error('Failed to export instance:', error)
     throw error
