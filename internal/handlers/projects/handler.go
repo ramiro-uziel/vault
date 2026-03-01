@@ -429,7 +429,7 @@ func (h *ProjectsHandler) DuplicateProject(w http.ResponseWriter, r *http.Reques
 					return apperr.NewInternal("failed to copy file", err)
 				}
 
-				_, err := queries.CreateTrackFile(ctx, sqlc.CreateTrackFileParams{
+				newFile, err := queries.CreateTrackFile(ctx, sqlc.CreateTrackFileParams{
 					VersionID:         newVersion.ID,
 					Quality:           file.Quality,
 					FilePath:          newPath,
@@ -442,6 +442,16 @@ func (h *ProjectsHandler) DuplicateProject(w http.ResponseWriter, r *http.Reques
 				})
 				if err != nil {
 					return apperr.NewInternal("failed to create file record", err)
+				}
+
+				if file.Waveform.Valid {
+					err = queries.UpdateWaveform(ctx, sqlc.UpdateWaveformParams{
+						Waveform: file.Waveform,
+						ID:       newFile.ID,
+					})
+					if err != nil {
+						return apperr.NewInternal("failed to copy waveform", err)
+					}
 				}
 			}
 		}

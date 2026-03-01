@@ -539,7 +539,10 @@ export default function MusicPlayer({
       }
     }
 
-    return Array.from({ length: 200 }).map(() => Math.random() * 60 + 20);
+    return Array.from({ length: 200 }).map((_, i) => {
+      const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+      return (x - Math.floor(x)) * 60 + 20;
+    });
   }, [currentTrack?.id, currentTrack?.waveform, currentTrack?.title]);
 
   const waveformViewBoxWidth = useMemo(() => {

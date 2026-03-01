@@ -629,7 +629,8 @@ export default function TrackVersionsModal({
     }
 
     for (let i = 0; i < PREVIEW_WAVEFORM_BARS; i++) {
-      bars.push(Math.random() * 60 + 20);
+      const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+      bars.push((x - Math.floor(x)) * 60 + 20);
     }
     return bars;
   }, [activeVersion?.id, activeVersion?.waveform]);

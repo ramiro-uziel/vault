@@ -427,7 +427,10 @@ export default function SharedTrackPlayer({
         console.error("Failed to parse waveform", e);
       }
     }
-    return Array.from({ length: 150 }).map(() => Math.random() * 60 + 20);
+    return Array.from({ length: 150 }).map((_, i) => {
+      const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+      return (x - Math.floor(x)) * 60 + 20;
+    });
   }, [track.waveform]);
 
   const waveformViewBoxWidth = useMemo(() => {
