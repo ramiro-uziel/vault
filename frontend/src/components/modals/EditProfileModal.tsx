@@ -53,7 +53,10 @@ export default function EditProfileModal({
   currentColorShiftRotation,
   onSave,
 }: EditProfileModalProps) {
-  const defaultColors = ["#8FC7FF", "#4CF3FF", "#BFF9FF"];
+  const defaultColors = ["#36a8ff", "#36d8ff", "#3678ff"];
+  const DEFAULT_COLOR_SHIFT = 2;
+  const DEFAULT_COLOR_SPREAD = 100;
+  const DEFAULT_GRADIENT_SPREAD = 14;
   const PICKER_SIZE = 280;
   const PICKER_PADDING = 20;
   const PICKER_RADIUS = PICKER_SIZE / 2 - PICKER_PADDING;
@@ -61,36 +64,44 @@ export default function EditProfileModal({
 
   const [username, setUsername] = useState(currentUsername);
   const [discColors, setDiscColors] = useState<string[]>(defaultColors);
-  const [colorShift, setColorShift] = useState(0);
+  const [colorShift, setColorShift] = useState(DEFAULT_COLOR_SHIFT);
   const [numPoints, setNumPoints] = useState(3);
-  const [colorSpread, setColorSpread] = useState(50);
-  const [gradientSpread, setGradientSpread] = useState(40);
+  const [colorSpread, setColorSpread] = useState(DEFAULT_COLOR_SPREAD);
+  const [gradientSpread, setGradientSpread] = useState(DEFAULT_GRADIENT_SPREAD);
   const [isSaving, setIsSaving] = useState(false);
 
   const initialAngleAndRadius = useMemo(() => {
-    if (!currentDiscColors || currentDiscColors.length === 0) {
-      return undefined;
-    }
-    const shift = currentColorShiftRotation ?? 0;
+    const colorsToUse =
+      currentDiscColors && currentDiscColors.length > 0
+        ? currentDiscColors
+        : defaultColors;
+    const shift =
+      currentDiscColors && currentDiscColors.length > 0
+        ? (currentColorShiftRotation ?? 0)
+        : DEFAULT_COLOR_SHIFT;
     const unshiftAmount =
-      currentDiscColors.length - (shift % currentDiscColors.length);
-    const unshiftedColors = applyColorShift(currentDiscColors, unshiftAmount);
+      colorsToUse.length - (shift % colorsToUse.length);
+    const unshiftedColors = applyColorShift(colorsToUse, unshiftAmount);
     const mainColor = unshiftedColors[Math.floor(unshiftedColors.length / 2)];
     return calculateInitialAngleAndRadius(mainColor, MAX_LIGHT, PICKER_RADIUS);
   }, [currentDiscColors, currentColorShiftRotation, MAX_LIGHT, PICKER_RADIUS]);
 
   useEffect(() => {
     setUsername(currentUsername);
-    if (currentDiscColors && currentDiscColors.length > 0) {
+    const hasUserColors = currentDiscColors && currentDiscColors.length > 0;
+    if (hasUserColors) {
       setDiscColors(currentDiscColors);
       setNumPoints(Math.min(currentDiscColors.length, 3));
+      setColorSpread(currentColorSpread ?? DEFAULT_COLOR_SPREAD);
+      setGradientSpread(currentGradientSpread ?? DEFAULT_GRADIENT_SPREAD);
+      setColorShift(currentColorShiftRotation ?? DEFAULT_COLOR_SHIFT);
     } else {
       setDiscColors(defaultColors);
       setNumPoints(3);
+      setColorSpread(DEFAULT_COLOR_SPREAD);
+      setGradientSpread(DEFAULT_GRADIENT_SPREAD);
+      setColorShift(DEFAULT_COLOR_SHIFT);
     }
-    setColorSpread(currentColorSpread ?? 50);
-    setGradientSpread(currentGradientSpread ?? 40);
-    setColorShift(currentColorShiftRotation ?? 0);
   }, [
     currentUsername,
     currentDiscColors,
@@ -123,12 +134,15 @@ export default function EditProfileModal({
 
   const handleSave = useCallback(async () => {
     const colorsToSave = discColors.slice(0, numPoints);
+    console.log("[EditProfileModal] disc colors after edit:", colorsToSave);
     const colorsChanged =
       JSON.stringify(colorsToSave) !==
       JSON.stringify(currentDiscColors || defaultColors);
-    const colorSpreadChanged = colorSpread !== (currentColorSpread ?? 50);
-    const gradientSpreadChanged =
-      gradientSpread !== (currentGradientSpread ?? 40);
+    const hasUserColors = currentDiscColors && currentDiscColors.length > 0;
+    const prevColorSpread = hasUserColors ? (currentColorSpread ?? DEFAULT_COLOR_SPREAD) : DEFAULT_COLOR_SPREAD;
+    const prevGradientSpread = hasUserColors ? (currentGradientSpread ?? DEFAULT_GRADIENT_SPREAD) : DEFAULT_GRADIENT_SPREAD;
+    const colorSpreadChanged = colorSpread !== prevColorSpread;
+    const gradientSpreadChanged = gradientSpread !== prevGradientSpread;
     const usernameChanged = username !== currentUsername;
 
     if (
@@ -147,7 +161,7 @@ export default function EditProfileModal({
         colorsChanged ||
         colorSpreadChanged ||
         gradientSpreadChanged ||
-        colorShift !== (currentColorShiftRotation ?? 0)
+        colorShift !== (hasUserColors ? (currentColorShiftRotation ?? DEFAULT_COLOR_SHIFT) : DEFAULT_COLOR_SHIFT)
       ) {
         await updatePreferences({
           disc_colors: colorsToSave,

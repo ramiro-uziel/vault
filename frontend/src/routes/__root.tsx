@@ -126,6 +126,7 @@ function CustomToast(props: ToastProps) {
 function RootComponent() {
   const routerState = useRouterState();
   const isProfileRoute = routerState.location.pathname.startsWith("/profile");
+  const isSetupRoute = routerState.location.pathname.startsWith("/reset-setup");
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [hasCheckedUsers, setHasCheckedUsers] = useState(false);
@@ -176,7 +177,7 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      {isAuthenticated && <MusicPlayer hideControls={isProfileRoute} />}
+      {isAuthenticated && !isSetupRoute && <MusicPlayer hideControls={isProfileRoute} />}
       <Toaster
         position="top-center"
         offset="16px"

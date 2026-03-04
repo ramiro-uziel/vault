@@ -185,7 +185,7 @@ function ProfilePage() {
                         : "Vault Instance"
                     }
                     colors={preferences.disc_colors}
-                    colorSpread={preferences.color_spread}
+                    colorSpread={preferences.disc_colors?.length ? preferences.color_spread : undefined}
                   />
                 ) : (
                   <div className="w-[305px] h-[375px]" />

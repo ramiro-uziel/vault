@@ -79,43 +79,40 @@ export function useScrollToTrack({
 
   useEffect(() => {
     if (
-      pendingScrollToTrack &&
-      tracks.length > 0 &&
-      showTracksPanel &&
-      lastScrolledTrackRef.current !== pendingScrollToTrack
+      !pendingScrollToTrack ||
+      tracks.length === 0 ||
+      !showTracksPanel ||
+      lastScrolledTrackRef.current === pendingScrollToTrack
     ) {
-      lastScrolledTrackRef.current = pendingScrollToTrack;
-      const shouldAutoplay = pendingAutoplay;
-
-      const timer = setTimeout(() => {
-        const trackElement = document.querySelector(
-          `[data-track-id="${pendingScrollToTrack}"]`,
-        );
-        if (trackElement) {
-          trackElement.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-          setFadeHighlightedTrackId(pendingScrollToTrack);
-          setTimeout(() => {
-            setFadeHighlightedTrackId(null);
-          }, 1500);
-
-          if (shouldAutoplay) {
-            const track = tracks.find(
-              (t) => t.public_id === pendingScrollToTrack,
-            );
-            if (track) {
-              onTrackClick(track);
-            }
-          }
-        }
-        setPendingScrollToTrack(null);
-        setPendingAutoplay(false);
-      }, 300);
-
-      return () => clearTimeout(timer);
+      return;
     }
+
+    const track = tracks.find((t) => t.public_id === pendingScrollToTrack);
+    if (!track) return;
+
+    lastScrolledTrackRef.current = pendingScrollToTrack;
+    const trackId = pendingScrollToTrack;
+    const shouldAutoplay = pendingAutoplay;
+
+    setPendingScrollToTrack(null);
+    setPendingAutoplay(false);
+
+    if (shouldAutoplay) {
+      onTrackClick(track);
+    }
+
+    setFadeHighlightedTrackId(trackId);
+    setTimeout(() => {
+      setFadeHighlightedTrackId(null);
+    }, 1500);
+
+    // Scroll as a best-effort visual aid after React has painted
+    requestAnimationFrame(() => {
+      const trackElement = document.querySelector(
+        `[data-track-id="${trackId}"]`,
+      );
+      trackElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }, [
     pendingScrollToTrack,
     pendingAutoplay,

@@ -6,6 +6,7 @@ import BaseModal from "@/components/modals/BaseModal";
 import MoveProjectModal from "@/components/modals/MoveProjectModal";
 import NotesPanel from "@/components/NotesPanel";
 import LinkNotAvailable from "@/components/LinkNotAvailable";
+import GlobalSearchModal from "@/components/GlobalSearchModal";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Filter } from "virtual:refractionFilter?width=48&height=48&radius=16&bezelWidth=12&glassThickness=40&refractiveIndex=1.45&bezelType=convex_squircle";
 import {
@@ -137,8 +138,20 @@ function SharedTrackPage() {
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [isMovingTrack, setIsMovingTrack] = useState(false);
   const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
 
   const canEdit = track?.can_edit ?? false;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === "KeyF") {
+        e.preventDefault();
+        setIsGlobalSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (track) {
@@ -756,6 +769,11 @@ function SharedTrackPage() {
           isMoving={isMovingTrack}
         />
       )}
+
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+      />
     </>
   );
 }

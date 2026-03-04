@@ -212,7 +212,7 @@ const ColorPicker = memo(
           )}
 
           <div
-            className="absolute rounded-full border-3 border-white/90 shadow cursor-grab touch-none z-30"
+            className="absolute rounded-full border-[3px] border-white shadow-lg cursor-grab touch-none z-30"
             style={{
               left: bx - bulletRadius * 0.7,
               top: by - bulletRadius * 0.7,

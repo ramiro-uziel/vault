@@ -40,9 +40,9 @@ export default function CDDiscBadge({
   onLabelChange,
   onLabelKeyDown,
   colors,
-  colorSpread = 50,
+  colorSpread = 100,
 }: CDDiscBadgeProps) {
-  const defaultColors = ["#8FC7FF", "#4CF3FF", "#BFF9FF"];
+  const defaultColors = ["#36a8ff", "#36d8ff", "#3678ff"];
   const discColors = colors && colors.length > 0 ? colors : defaultColors;
 
   const avgLuminance = getAverageLuminance(discColors);
